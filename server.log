@@ -1,0 +1,19 @@
+nohup: ignoring input
+
+> smcc-backend@1.0.0 start
+> node server.js
+
+Server started on port 5000
+MySQL Connected...
+MySQL Tables Synced
+User connected: JrT-E41wZzss2OroAAAB
+User connected: Rdt79p01nZTwjjczAAAD
+User connected: y2RcXzuCLQTHC7ooAAAG
+User connected: UWfzBOx7ykCzGUS3AAAH
+User connected: _eNhOMl8Wznkyuc_AAAJ
+User connected: RXRz3q04rp0u4GVSAAAL
+User connected: cdo5NJ3MGGSzLbcVAAAN
+User connected: Axt0blKS7pn651RoAAAP
+User connected: upGVS0TE7mY6s8BBAAAS
+User connected: k5RuEL3DGVDMp_lsAAAT
+Killed
