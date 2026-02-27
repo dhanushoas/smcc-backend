@@ -3,15 +3,6 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Match = require('../models/Match');
 
-// Helper: check if admin is authorized to modify a given match
-// superadmin + unassigned admins → can modify any match
-// assigned admin → only their assignedMatchId
-const canModifyMatch = (adminUser, matchId) => {
-    if (adminUser.role === 'superadmin') return true;
-    if (!adminUser.assignedMatchId) return true; // unassigned admin fallback → all matches
-    return String(adminUser.assignedMatchId) === String(matchId);
-};
-
 // @route   GET api/matches
 // @desc    Get all matches
 // @access  Public
@@ -31,7 +22,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const match = await Match.findByPk(req.params.id);
-        if (!match) return res.status(404).json({ msg: 'Match not found' });
+        if (!match) {
+            return res.status(404).json({ msg: 'Match not found' });
+        }
         res.json(match);
     } catch (err) {
         console.error(err.message);
@@ -41,15 +34,9 @@ router.get('/:id', async (req, res) => {
 
 // @route   POST api/matches
 // @desc    Create a match
-// @access  Private (superadmin or unassigned admin)
+// @access  Private
 router.post('/', auth, async (req, res) => {
     try {
-        // Only superadmin / unassigned admin can create matches
-        if (req.adminUser.role !== 'superadmin' && req.adminUser.assignedMatchId) {
-            return res.status(403).json({
-                msg: 'You are assigned to a specific match and cannot create new matches.'
-            });
-        }
         const match = await Match.create(req.body);
         req.app.get('socketio').emit('matchUpdate', match);
         res.json(match);
@@ -61,21 +48,18 @@ router.post('/', auth, async (req, res) => {
 
 // @route   PUT api/matches/:id
 // @desc    Update match (score, status, etc.)
-// @access  Private — must be assigned to this match (or superadmin)
+// @access  Private
 router.put('/:id', auth, async (req, res) => {
     try {
-        // ── Assignment enforcement ────────────────────────────────────────
-        if (!canModifyMatch(req.adminUser, req.params.id)) {
-            return res.status(403).json({
-                msg: `Access denied. You are assigned to match ${req.adminUser.assignedMatchId}, not this one.`,
-                type: 'WRONG_MATCH'
-            });
+        let match = await Match.findByPk(req.params.id);
+        if (!match) {
+            return res.status(404).json({ msg: 'Match not found' });
         }
 
-        let match = await Match.findByPk(req.params.id);
-        if (!match) return res.status(404).json({ msg: 'Match not found' });
-
+        // Update fields
         await match.update(req.body);
+
+        // Update lastUpdated
         match.lastUpdated = new Date();
         await match.save();
 
@@ -89,14 +73,14 @@ router.put('/:id', auth, async (req, res) => {
 
 // @route   DELETE api/matches/:id
 // @desc    Delete a match
-// @access  Private (superadmin only)
+// @access  Private
 router.delete('/:id', auth, async (req, res) => {
     try {
-        if (req.adminUser.role !== 'superadmin') {
-            return res.status(403).json({ msg: 'Only super-admin can delete matches.' });
-        }
         const match = await Match.findByPk(req.params.id);
-        if (!match) return res.status(404).json({ msg: 'Match not found' });
+
+        if (!match) {
+            return res.status(404).json({ msg: 'Match not found' });
+        }
 
         const matchId = match.id;
         await match.destroy();
