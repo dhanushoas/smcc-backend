@@ -8,9 +8,6 @@ const passport = require('passport');
 const getIO = (req) => req.app.get('socketio');
 
 // ─── POST /api/auth/login ──────────────────────────────────────────────────
-// Accepts { username, password, platform: 'web' | 'mobile' }
-// If admin is already logged in on another platform → force-logout that platform,
-// then issue a new token for the new platform.
 router.post('/login', async (req, res) => {
     const { username, password, platform } = req.body;
     const incomingPlatform = platform || 'web';
@@ -18,17 +15,28 @@ router.post('/login', async (req, res) => {
     try {
         let user = await User.findOne({ where: { username } });
 
-        if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!user) return res.status(400).json({
+            success: false,
+            message: 'Invalid Credentials',
+            data: null
+        });
 
         if (!user.password)
-            return res.status(400).json({ msg: 'This account uses Google Login.' });
+            return res.status(400).json({
+                success: false,
+                message: 'This account uses Google Login.',
+                data: null
+            });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!isMatch) return res.status(400).json({
+            success: false,
+            message: 'Invalid Credentials',
+            data: null
+        });
 
         // ── Cross-platform force-logout ────────────────────────────────────
         if (user.role === 'admin' && user.isLoggedIn && user.activePlatform && user.activePlatform !== incomingPlatform) {
-            // Notify the OLD platform to log out immediately via socket
             getIO(req).emit('adminForceLogout', {
                 platform: user.activePlatform,
                 reason: `Session taken over by ${incomingPlatform}`
@@ -41,7 +49,11 @@ router.post('/login', async (req, res) => {
         const payload = { user: { id: user.id, role: user.role } };
 
         jwt.sign(payload, jwtSecret, { expiresIn: '100h' }, async (err, token) => {
-            if (err) return res.status(500).json({ msg: 'Token generation failed' });
+            if (err) return res.status(500).json({
+                success: false,
+                message: 'Token generation failed',
+                data: null
+            });
 
             // Update session fields
             user.isLoggedIn = true;
@@ -52,24 +64,40 @@ router.post('/login', async (req, res) => {
             console.log(`Admin logged in on platform: ${incomingPlatform}`);
 
             res.json({
-                token,
-                user: { id: user.id, role: user.role },
-                platform: incomingPlatform
+                success: true,
+                message: 'Login successful',
+                data: {
+                    token,
+                    user: { id: user.id, role: user.role },
+                    platform: incomingPlatform
+                }
             });
         });
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).send('Server error: ' + err.message);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during login',
+            data: null
+        });
     }
 });
 
 // ─── GET /api/auth/verify ──────────────────────────────────────────────────
-// Validates token AND checks it matches the activeToken in DB (stale tokens rejected)
 router.get('/verify', async (req, res) => {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) return res.status(401).json({ msg: 'No token' });
+    let token = req.header('x-auth-token');
+    const authHeader = req.header('Authorization');
 
-    const token = authHeader.replace('Bearer ', '').trim();
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.replace('Bearer ', '').trim();
+    }
+
+    if (!token) return res.status(401).json({
+        success: false,
+        message: 'No token, authorization denied',
+        data: null
+    });
+
     const jwtSecret = process.env.JWT_SECRET || 'smccsecrettoken123_fallback';
 
     try {
@@ -77,17 +105,27 @@ router.get('/verify', async (req, res) => {
         const user = await User.findByPk(decoded.user.id);
 
         if (!user || !user.isLoggedIn)
-            return res.status(401).json({ msg: 'Session ended' });
+            return res.status(401).json({
+                success: false,
+                message: 'Session ended',
+                data: null
+            });
 
         // Stale token check — token must match the one stored in DB
         if (user.activeToken !== token)
-            return res.status(401).json({ msg: 'Session superseded by another platform' });
+            return res.status(401).json({
+                success: false,
+                message: 'Session superseded by another platform',
+                data: null
+            });
 
-        res.json({ valid: true, platform: user.activePlatform, user: { id: user.id, role: user.role } });
+        res.json({
+            success: true,
+            message: 'Token valid',
+            data: { valid: true, platform: user.activePlatform, user: { id: user.id, role: user.role } }
+        });
     } catch (err) {
-        // JWT expired
         if (err.name === 'TokenExpiredError') {
-            // Clear DB session on expiry
             try {
                 const decoded = jwt.decode(token);
                 if (decoded?.user?.id) {
@@ -97,14 +135,21 @@ router.get('/verify', async (req, res) => {
                         user.activePlatform = null;
                         user.activeToken = null;
                         await user.save();
-                        // Notify all platforms that the session expired
                         req.app.get('socketio').emit('adminSessionExpired', {});
                     }
                 }
             } catch (_) { }
-            return res.status(401).json({ msg: 'Token expired' });
+            return res.status(401).json({
+                success: false,
+                message: 'Token expired',
+                data: null
+            });
         }
-        res.status(401).json({ msg: 'Invalid token' });
+        res.status(401).json({
+            success: false,
+            message: 'Invalid token',
+            data: null
+        });
     }
 });
 
@@ -112,7 +157,11 @@ router.get('/verify', async (req, res) => {
 router.post('/logout', async (req, res) => {
     try {
         const { userId } = req.body;
-        if (!userId) return res.status(400).json({ msg: 'User ID required' });
+        if (!userId) return res.status(400).json({
+            success: false,
+            message: 'User ID required',
+            data: null
+        });
 
         const user = await User.findByPk(userId);
         if (user) {
@@ -121,24 +170,43 @@ router.post('/logout', async (req, res) => {
             user.activeToken = null;
             await user.save();
             getIO(req).emit('adminSessionEnded', {});
-            return res.json({ msg: 'Logged out successfully' });
+            return res.json({
+                success: true,
+                message: 'Logged out successfully',
+                data: null
+            });
         }
-        res.status(404).json({ msg: 'User not found' });
+        res.status(404).json({
+            success: false,
+            message: 'User not found',
+            data: null
+        });
     } catch (err) {
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            message: 'Server error during logout',
+            data: null
+        });
     }
 });
 
 // ─── POST /api/auth/reset-session ─────────────────────────────────────────
-// Emergency: force-clear a locked session by re-entering credentials
 router.post('/reset-session', async (req, res) => {
     const { username, password } = req.body;
     try {
         const user = await User.findOne({ where: { username } });
-        if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!user) return res.status(400).json({
+            success: false,
+            message: 'Invalid Credentials',
+            data: null
+        });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!isMatch) return res.status(400).json({
+            success: false,
+            message: 'Invalid Credentials',
+            data: null
+        });
 
         user.isLoggedIn = false;
         user.activePlatform = null;
@@ -146,9 +214,17 @@ router.post('/reset-session', async (req, res) => {
         await user.save();
 
         getIO(req).emit('adminForceLogout', { platform: 'all', reason: 'Session reset' });
-        res.json({ msg: 'Session reset. You can now login.' });
+        res.json({
+            success: true,
+            message: 'Session reset. You can now login.',
+            data: null
+        });
     } catch (err) {
-        res.status(500).send('Server error');
+        res.status(500).json({
+            success: false,
+            message: 'Server error during session reset',
+            data: null
+        });
     }
 });
 

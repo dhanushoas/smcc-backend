@@ -19,10 +19,18 @@ router.get('/links', async (req, res) => {
             community: links.filter(l => l.category === 'community'),
         };
 
-        res.json(grouped);
+        res.json({
+            success: true,
+            message: 'Footer links fetched successfully',
+            data: grouped
+        });
     } catch (err) {
         console.error('Error fetching footer links:', err);
-        res.status(500).json({ msg: 'Server error fetching links' });
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching links',
+            data: null
+        });
     }
 });
 
@@ -34,10 +42,18 @@ router.get('/socials', async (req, res) => {
             where: { isActive: true },
             order: [['order', 'ASC']]
         });
-        res.json(socials);
+        res.json({
+            success: true,
+            message: 'Social links fetched successfully',
+            data: socials
+        });
     } catch (err) {
         console.error('Error fetching social links:', err);
-        res.status(500).json({ msg: 'Server error fetching social links' });
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching social links',
+            data: null
+        });
     }
 });
 

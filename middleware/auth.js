@@ -1,10 +1,20 @@
 const jwt = require('jsonwebtoken');
 
 const auth = (req, res, next) => {
-    const token = req.header('x-auth-token');
+    let token = req.header('x-auth-token');
+
+    // Check for Authorization header (Bearer token)
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
 
     if (!token) {
-        return res.status(401).json({ msg: 'No token, authorization denied' });
+        return res.status(401).json({
+            success: false,
+            message: 'No token, authorization denied',
+            data: null
+        });
     }
 
     try {
@@ -12,7 +22,11 @@ const auth = (req, res, next) => {
         req.user = decoded.user;
         next();
     } catch (err) {
-        res.status(401).json({ msg: 'Token is not valid' });
+        res.status(401).json({
+            success: false,
+            message: 'Token is not valid',
+            data: null
+        });
     }
 };
 
