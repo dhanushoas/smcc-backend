@@ -46,6 +46,11 @@ sequelize.sync({ alter: true })
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/matches', require('./routes/matches'));
+app.use('/api/footer', require('./routes/footer'));
+app.use('/api/interactions', require('./routes/misc'));
+
+// Expose public uploads folder explicitly
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Socket.io connection
 io.on('connection', (socket) => {
