@@ -11,23 +11,25 @@ async function ensureDefaultData() {
     try {
         // Explicitly check for table existence if possible, or just catch errors
         const linkCount = await FooterLink.count();
-        const socialCount = await SocialLink.socialCount?.() || await SocialLink.count(); // Safety check
+        const socialCount = await SocialLink.count().catch(() => 0);
 
         if (linkCount === 0) {
             console.log('SEEDING: FooterLink table empty, adding defaults...');
             await FooterLink.bulkCreate([
-                { title: 'Home', route: '/', category: 'quick_links', order: 1 },
+                { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
                 { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 2 },
-                { title: 'Schedule', route: '/schedule', category: 'quick_links', order: 3 },
-                { title: 'Squads', route: '/squads', category: 'quick_links', order: 4 },
+                { title: 'Recent Results', route: '/results', category: 'quick_links', order: 3 },
+                { title: 'Series Schedule', route: '/schedule', category: 'quick_links', order: 4 },
 
                 { title: 'Contact Us', route: '/contact', category: 'support', order: 1 },
                 { title: 'Privacy Policy', route: '/privacy', category: 'support', order: 2 },
                 { title: 'Terms of Use', route: '/terms', category: 'support', order: 3 },
+                { title: 'Support Center', route: '/support', category: 'support', order: 4 },
 
                 { title: 'About SMCC', route: '/about', category: 'community', order: 1 },
-                { title: 'Join Council', route: '/join-council', category: 'community', order: 2 },
-                { title: 'Sponsorship', route: '/sponsorship', category: 'community', order: 3 }
+                { title: 'Join Council', route: '/join', category: 'community', order: 2 },
+                { title: 'Sponsorship', route: '/sponsorship', category: 'community', order: 3 },
+                { title: 'Console', route: '/login', category: 'community', order: 4 }
             ]);
         }
 
@@ -44,6 +46,43 @@ async function ensureDefaultData() {
         console.error('Auto-seeding failure (non-blocking):', err.message);
     }
 }
+
+// @route   POST /api/footer/seed
+// @desc    Force re-seed footer data
+router.post('/seed', async (req, res) => {
+    try {
+        await FooterLink.destroy({ where: {}, truncate: true });
+        await SocialLink.destroy({ where: {}, truncate: true });
+
+        await FooterLink.bulkCreate([
+            { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
+            { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 2 },
+            { title: 'Recent Results', route: '/results', category: 'quick_links', order: 3 },
+            { title: 'Series Schedule', route: '/schedule', category: 'quick_links', order: 4 },
+
+            { title: 'Contact Us', route: '/contact', category: 'support', order: 1 },
+            { title: 'Privacy Policy', route: '/privacy', category: 'support', order: 2 },
+            { title: 'Terms of Use', route: '/terms', category: 'support', order: 3 },
+            { title: 'Support Center', route: '/support', category: 'support', order: 4 },
+
+            { title: 'About SMCC', route: '/about', category: 'community', order: 1 },
+            { title: 'Join Council', route: '/join', category: 'community', order: 2 },
+            { title: 'Sponsorship', route: '/sponsorship', category: 'community', order: 3 },
+            { title: 'Console', route: '/login', category: 'community', order: 4 }
+        ]);
+
+        await SocialLink.bulkCreate([
+            { platform: 'facebook', url: 'https://facebook.com/smcc', order: 1 },
+            { platform: 'instagram', url: 'https://instagram.com/smcc', order: 2 },
+            { platform: 'twitter-x', url: 'https://twitter.com/smcc', order: 3 },
+            { platform: 'whatsapp', url: 'https://wa.me/smcc', order: 4 }
+        ]);
+
+        res.json({ success: true, message: 'Footer data seeded successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // @route   GET /api/footer/links
 // @desc    Get all active footer links grouped by category
@@ -64,6 +103,19 @@ router.get('/links', async (req, res) => {
             community: links.filter(l => l.category === 'community'),
         };
 
+        // If categories are empty after fetch, return fallback structure
+        if (grouped.quick_links.length === 0 && grouped.support.length === 0 && grouped.community.length === 0) {
+            return res.json({
+                success: true,
+                message: 'No links found, returning fallbacks',
+                data: {
+                    quick_links: [{ title: 'Live Matches', route: '/' }],
+                    support: [{ title: 'Contact Us', route: '/contact' }],
+                    community: [{ title: 'Console', route: '/login' }]
+                }
+            });
+        }
+
         res.json({
             success: true,
             message: 'Footer links fetched successfully',
@@ -75,7 +127,11 @@ router.get('/links', async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Fallback empty footer links',
-            data: { quick_links: [], support: [], community: [] }
+            data: {
+                quick_links: [{ title: 'Live Matches', route: '/' }],
+                support: [{ title: 'Contact Us', route: '/contact' }],
+                community: [{ title: 'Console', route: '/login' }]
+            }
         });
     }
 });
