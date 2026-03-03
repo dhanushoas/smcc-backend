@@ -37,17 +37,17 @@ app.use(passport.session());
 // Connect Database
 connectDB();
 
-// Sync Database
-sequelize.sync({ alter: true })
-    .then(() => console.log('MySQL Tables Synced'))
-    .catch(err => console.error('Error syncing MySQL tables:', err));
-
 // Routes
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/matches', require('./routes/matches'));
 app.use('/api/footer', require('./routes/footer'));
 app.use('/api/interactions', require('./routes/misc'));
+
+// Sync Database
+sequelize.sync({ alter: true })
+    .then(() => console.log('MySQL Tables Synced'))
+    .catch(err => console.error('Error syncing MySQL tables:', err));
 
 // Expose public uploads folder explicitly
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
