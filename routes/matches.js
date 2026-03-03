@@ -76,33 +76,65 @@ router.post('/', auth, async (req, res) => {
 });
 
 // @route   PUT api/matches/:id
-// @desc    Update match (score, status, etc.)
+// @desc    Update match (generic metadata)
 // @access  Private
 router.put('/:id', auth, matchValidator, async (req, res) => {
     try {
-        // matchValidator already fetched and attached match to req
         let match = req.match;
 
-        // Update fields
-        await match.update(req.body);
+        // Strip toss fields to prevent unintended validation triggers in matchValidator
+        delete req.body.toss;
+        delete req.body.tossWinnerTeamId;
+        delete req.body.tossDecision;
 
-        // Update lastUpdated
+        await match.update(req.body);
         match.lastUpdated = new Date();
+        await match.save();
+
+        req.app.get('socketio').emit('matchUpdate', match);
+        res.json({ success: true, message: 'Match updated successfully', data: match });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ success: false, message: 'Server Error updating match', data: null });
+    }
+});
+
+// @route   PUT api/matches/:id/score
+// @desc    Update match score & innings (Dedicated)
+// @access  Private
+router.put('/:id/score', auth, matchValidator, async (req, res) => {
+    try {
+        let match = req.match;
+
+        // Strictly strip toss to isolate logic
+        delete req.body.toss;
+        delete req.body.tossWinnerTeamId;
+        delete req.body.tossDecision;
+
+        // Primary scoring updates
+        if (req.body.score) match.score = req.body.score;
+        if (req.body.innings) match.innings = req.body.innings;
+        if (req.body.currentBatsmen) match.currentBatsmen = req.body.currentBatsmen;
+        if (req.body.currentBowler) match.currentBowler = req.body.currentBowler;
+        if (req.body.history) match.history = req.body.history;
+        if (req.body.status) match.status = req.body.status;
+
+        match.lastUpdated = new Date();
+        match.changed('score', true);
+        match.changed('innings', true);
+        match.changed('history', true); // Force sequelize to detect JSON changes
+
         await match.save();
 
         req.app.get('socketio').emit('matchUpdate', match);
         res.json({
             success: true,
-            message: 'Match updated successfully',
+            message: 'Score updated successfully',
             data: match
         });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).json({
-            success: false,
-            message: 'Server Error updating match',
-            data: null
-        });
+        console.error('Scoring update error:', err);
+        res.status(500).json({ success: false, message: 'Server error updating score', data: null });
     }
 });
 

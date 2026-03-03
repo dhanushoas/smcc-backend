@@ -85,8 +85,9 @@ const matchValidator = async (req, res, next) => {
             }
         }
 
-        // 5. Toss Validation: Cannot change after match starts (balls bowled)
-        if (updates.toss || req.path.endsWith('/toss')) {
+        // 5. Toss Validation: Only run if explicitly updating toss via /toss or direct fields
+        const isTossRequest = req.path.endsWith('/toss') || updates.tossWinnerTeamId || updates.tossDecision;
+        if (isTossRequest) {
             const hasStarted = (match.score && parseFloat(match.score.overs) > 0) ||
                 (match.history && match.history.length > 0) ||
                 (match.innings && match.innings.some(inn => (inn.runs > 0 || (inn.batting && inn.batting.length > 0))));
