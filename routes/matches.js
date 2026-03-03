@@ -118,6 +118,7 @@ router.put('/:id/score', auth, matchValidator, async (req, res) => {
         if (req.body.currentBowler) match.currentBowler = req.body.currentBowler;
         if (req.body.history) match.history = req.body.history;
         if (req.body.status) match.status = req.body.status;
+        if (req.body.manOfTheMatch !== undefined) match.manOfTheMatch = req.body.manOfTheMatch;
 
         match.lastUpdated = new Date();
         match.changed('score', true);
