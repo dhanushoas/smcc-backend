@@ -20,7 +20,7 @@ const matchValidator = async (req, res, next) => {
         // 1. Status Based Restrictions
         if (match.status === 'completed' && !req.path.includes('all')) {
             // Allow fetching, but block scoring updates on completed matches
-            if (req.method === 'PUT' && !req.path.includes('reverse')) {
+            if (req.method === 'PUT' && !req.fullPath?.includes('reverse')) {
                 return res.status(400).json({
                     success: false,
                     message: 'Cannot modify a completed match',
@@ -29,11 +29,21 @@ const matchValidator = async (req, res, next) => {
             }
         }
 
+        // 2. Pause Guard: Block all PUT updates to scoring/state if paused (except to resume)
+        const isPauseRequest = req.path.endsWith('/pause');
+        if (match.score?.isPaused && req.method === 'PUT' && !isPauseRequest && !req.path.endsWith('/reverse')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Match is currently paused. Resume before making updates.',
+                data: null
+            });
+        }
+
         const updates = req.body;
 
-        // 2. Score & Logic Validation
+        // 3. Score & Logic Validation
         if (updates.score) {
-            const { runs, wickets, overs, isPaused, thisOver } = updates.score;
+            const { runs, wickets, overs, thisOver } = updates.score;
 
             // No negative runs
             if (runs < 0) {
@@ -61,12 +71,7 @@ const matchValidator = async (req, res, next) => {
                 }
             }
 
-            // Pause Logic: Cannot pause if completed
-            if (isPaused && match.status === 'completed') {
-                return res.status(400).json({ success: false, message: 'Cannot pause a completed match', data: null });
-            }
-
-            // 3. Invalid Extra Combinations (e.g., Wide + Leg Bye)
+            // 4. Invalid Extra Combinations (e.g., Wide + Leg Bye)
             if (thisOver && Array.isArray(thisOver)) {
                 for (const ball of thisOver) {
                     if (ball.type === 'w' && (ball.lb > 0 || ball.b > 0)) {
@@ -80,16 +85,23 @@ const matchValidator = async (req, res, next) => {
             }
         }
 
-        // 4. Toss Validation: Cannot change after match starts (balls bowled)
-        if (updates.toss) {
-            const hasStarted = (match.score && parseFloat(match.score.overs) > 0) || (match.history && match.history.length > 0);
+        // 5. Toss Validation: Cannot change after match starts (balls bowled)
+        if (updates.toss || req.path.endsWith('/toss')) {
+            const hasStarted = (match.score && parseFloat(match.score.overs) > 0) ||
+                (match.history && match.history.length > 0) ||
+                (match.innings && match.innings.some(inn => (inn.runs > 0 || (inn.batting && inn.batting.length > 0))));
+
             if (hasStarted) {
-                return res.status(400).json({ success: false, message: 'Toss cannot be changed after the first ball is bowled', data: null });
+                return res.status(400).json({
+                    success: false,
+                    message: 'Toss cannot be changed after the first ball is bowled',
+                    data: null
+                });
             }
         }
 
-        // 5. Reverse Action: Handled in route but can pre-check here
-        if (req.path.includes('reverse')) {
+        // 6. Reverse Action: Handled in route but can pre-check here
+        if (req.path.endsWith('/reverse')) {
             if (!match.history || match.history.length === 0) {
                 return res.status(400).json({ success: false, message: 'Reverse cannot run if no history exists', data: null });
             }

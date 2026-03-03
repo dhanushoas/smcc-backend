@@ -52,6 +52,24 @@ sequelize.sync({ alter: true })
 // Expose public uploads folder explicitly
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// -------------------------------------------
+// Global Error Handler (Standardized JSON)
+// -------------------------------------------
+app.use((err, req, res, next) => {
+    console.error('-------------------------------------------');
+    console.error('GLOBAL ERROR CAUGHT:');
+    console.error(err.stack);
+    console.error('-------------------------------------------');
+
+    res.status(500).json({
+        success: false,
+        message: process.env.NODE_ENV === 'production'
+            ? 'Internal Server Error'
+            : err.message,
+        data: null
+    });
+});
+
 // Socket.io connection
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
@@ -62,4 +80,9 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, '0.0.0.0', () => console.log(`Server started on port ${PORT} and bound to 0.0.0.0`));
+server.listen(PORT, '0.0.0.0', () => {
+    console.log('-------------------------------------------');
+    console.log(`🚀 SMCC Backend Listening on port ${PORT}`);
+    console.log(`ENVIRONMENT: ${process.env.NODE_ENV || 'development'}`);
+    console.log('-------------------------------------------');
+});

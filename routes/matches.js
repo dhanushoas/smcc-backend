@@ -156,25 +156,105 @@ router.put('/:id/reverse', auth, matchValidator, async (req, res) => {
 router.put('/:id/pause', auth, matchValidator, async (req, res) => {
     try {
         let match = req.match;
-        const { isPaused, pauseReason } = req.body;
+        const { reason } = req.body;
+
+        // Toggle logic: If currently paused, resume. If not, pause.
+        const currentlyPaused = match.score?.isPaused || false;
+        const newPauseState = !currentlyPaused;
+
+        if (newPauseState && !reason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Pause reason is required',
+                data: null
+            });
+        }
 
         if (!match.score) match.score = {};
-        match.score.isPaused = isPaused;
-        match.score.pauseReason = isPaused ? (pauseReason || 'Paused by Admin') : '';
+        match.score.isPaused = newPauseState;
+        match.score.pauseReason = newPauseState ? reason : '';
         match.lastUpdated = new Date();
 
+        // Mark as "changed" for Sequelize to detect updates in JSON field
+        match.changed('score', true);
         await match.save();
+
         req.app.get('socketio').emit('matchUpdate', match);
         res.json({
             success: true,
-            message: isPaused ? 'Match paused successfully' : 'Match resumed successfully',
+            message: newPauseState ? 'Match paused successfully' : 'Match resumed successfully',
             data: match
         });
     } catch (err) {
-        console.error(err.message);
+        console.error('Pause Toggle Error:', err);
         res.status(500).json({
             success: false,
             message: 'Server Error during pause/resume toggle',
+            data: null
+        });
+    }
+});
+
+// @route   PUT api/matches/:id/toss
+// @desc    Update toss information
+// @access  Private
+router.put('/:id/toss', auth, matchValidator, async (req, res) => {
+    try {
+        let match = req.match;
+        const { tossWinnerTeamId, tossDecision } = req.body;
+
+        if (!tossWinnerTeamId || !tossDecision) {
+            return res.status(400).json({
+                success: false,
+                message: 'Toss winner and decision are required',
+                data: null
+            });
+        }
+
+        if (!['BAT', 'BOWL'].includes(tossDecision.toUpperCase())) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid toss decision. Must be BAT or BOWL',
+                data: null
+            });
+        }
+
+        // Validate team belongs to match
+        if (tossWinnerTeamId !== match.teamA && tossWinnerTeamId !== match.teamB) {
+            return res.status(400).json({
+                success: false,
+                message: 'Selected team does not belong to this match',
+                data: null
+            });
+        }
+
+        const opposition = (tossWinnerTeamId === match.teamA) ? match.teamB : match.teamA;
+        const battingTeam = (tossDecision.toUpperCase() === 'BAT') ? tossWinnerTeamId : opposition;
+
+        match.toss = {
+            winner: tossWinnerTeamId,
+            decision: tossDecision.toLowerCase()
+        };
+
+        if (!match.score) match.score = {};
+        match.score.battingTeam = battingTeam;
+        match.lastUpdated = new Date();
+
+        match.changed('toss', true);
+        match.changed('score', true);
+        await match.save();
+
+        req.app.get('socketio').emit('matchUpdate', match);
+        res.json({
+            success: true,
+            message: 'Toss updated successfully',
+            data: match
+        });
+    } catch (err) {
+        console.error('Toss Update Error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error updating toss',
             data: null
         });
     }

@@ -10,7 +10,7 @@ if (!dbUrl) {
 
 const sequelize = new Sequelize(dbUrl || 'mysql://localhost/test', {
     dialect: 'mysql',
-    logging: false,
+    logging: false, // Set to console.log to see all SQL queries in dev
     dialectOptions: {
         ssl: {
             rejectUnauthorized: false
@@ -21,11 +21,16 @@ const sequelize = new Sequelize(dbUrl || 'mysql://localhost/test', {
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
-        console.log('MySQL Connected...');
+        console.log('-------------------------------------------');
+        console.log('✅ MySQL Connection Established Successfully');
+        console.log(`Connected to: ${sequelize.config.host}`);
+        console.log('-------------------------------------------');
     } catch (err) {
-        console.error('CRITICAL: Unable to connect to the database:', err.message);
+        console.error('-------------------------------------------');
+        console.error('❌ CRITICAL: Unable to connect to database');
+        console.error('ERROR MESSAGE:', err.message);
         console.error('The server will continue to run to maintain port binding, but API calls requiring DB will fail.');
-        // We do legacy logic: keep process alive so Render doesn't loop-crash
+        console.error('-------------------------------------------');
     }
 };
 
