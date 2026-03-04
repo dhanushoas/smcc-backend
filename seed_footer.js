@@ -29,7 +29,7 @@ async function seedFooterData() {
             { title: 'Improvements', route: '/improvements', category: 'community', order: 1 },
             { title: 'Join Council', route: '/join', category: 'community', order: 2 },
             { title: 'Sponsorship', route: '/sponsorship', category: 'community', order: 3 },
-            { title: 'Console', route: '/login', category: 'community', order: 4, roleVisibility: 'ADMIN' },
+            { title: 'Console', route: '/login', category: 'community', order: 4 },
         ];
 
         await FooterLink.bulkCreate([...quickLinks, ...supportLinks, ...communityLinks]);

@@ -17,16 +17,16 @@ async function ensureDefaultData() {
             console.log('SEEDING: FooterLink table empty, adding defaults...');
             await FooterLink.bulkCreate([
                 { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
-                { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 2 },
-                { title: 'Recent Results', route: '/results', category: 'quick_links', order: 3 },
-                { title: 'Series Schedule', route: '/schedule', category: 'quick_links', order: 4 },
+                { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 2 },
+                { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 3 },
+                { title: 'Achievements', route: '/achievements', category: 'quick_links', order: 4 },
 
                 { title: 'Contact Us', route: '/contact', category: 'support', order: 1 },
-                { title: 'Privacy Policy', route: '/privacy', category: 'support', order: 2 },
-                { title: 'Terms of Use', route: '/terms', category: 'support', order: 3 },
-                { title: 'Support Center', route: '/support', category: 'support', order: 4 },
+                { title: 'Share Feedback', route: '/feedback', category: 'support', order: 2 },
+                { title: 'Report Issues', route: '/report', category: 'support', order: 3 },
+                { title: 'Privacy Policy', route: '/privacy', category: 'support', order: 4 },
 
-                { title: 'About SMCC', route: '/about', category: 'community', order: 1 },
+                { title: 'Improvements', route: '/improvements', category: 'community', order: 1 },
                 { title: 'Join Council', route: '/join', category: 'community', order: 2 },
                 { title: 'Sponsorship', route: '/sponsorship', category: 'community', order: 3 },
                 { title: 'Console', route: '/login', category: 'community', order: 4 }
@@ -56,16 +56,16 @@ router.post('/seed', async (req, res) => {
 
         await FooterLink.bulkCreate([
             { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
-            { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 2 },
-            { title: 'Recent Results', route: '/results', category: 'quick_links', order: 3 },
-            { title: 'Series Schedule', route: '/schedule', category: 'quick_links', order: 4 },
+            { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 2 },
+            { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 3 },
+            { title: 'Achievements', route: '/achievements', category: 'quick_links', order: 4 },
 
             { title: 'Contact Us', route: '/contact', category: 'support', order: 1 },
-            { title: 'Privacy Policy', route: '/privacy', category: 'support', order: 2 },
-            { title: 'Terms of Use', route: '/terms', category: 'support', order: 3 },
-            { title: 'Support Center', route: '/support', category: 'support', order: 4 },
+            { title: 'Share Feedback', route: '/feedback', category: 'support', order: 2 },
+            { title: 'Report Issues', route: '/report', category: 'support', order: 3 },
+            { title: 'Privacy Policy', route: '/privacy', category: 'support', order: 4 },
 
-            { title: 'About SMCC', route: '/about', category: 'community', order: 1 },
+            { title: 'Improvements', route: '/improvements', category: 'community', order: 1 },
             { title: 'Join Council', route: '/join', category: 'community', order: 2 },
             { title: 'Sponsorship', route: '/sponsorship', category: 'community', order: 3 },
             { title: 'Console', route: '/login', category: 'community', order: 4 }
