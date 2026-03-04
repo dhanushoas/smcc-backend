@@ -14,7 +14,6 @@ async function ensureDefaultData() {
         const socialCount = await SocialLink.count().catch(() => 0);
 
         if (linkCount === 0) {
-            console.log('SEEDING: FooterLink table empty, adding defaults...');
             await FooterLink.bulkCreate([
                 { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
                 { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 2 },
@@ -34,7 +33,6 @@ async function ensureDefaultData() {
         }
 
         if (socialCount === 0) {
-            console.log('SEEDING: SocialLink table empty, adding defaults...');
             await SocialLink.bulkCreate([
                 { platform: 'facebook', url: 'https://facebook.com/smcc', order: 1 },
                 { platform: 'instagram', url: 'https://instagram.com/smcc', order: 2 },
@@ -43,7 +41,6 @@ async function ensureDefaultData() {
             ]);
         }
     } catch (err) {
-        console.error('Auto-seeding failure (non-blocking):', err.message);
     }
 }
 
@@ -80,7 +77,7 @@ router.post('/seed', async (req, res) => {
 
         res.json({ success: true, message: 'Footer data seeded successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        next(err); // Pass error to the next middleware (error handler)
     }
 });
 
@@ -122,7 +119,6 @@ router.get('/links', async (req, res) => {
             data: grouped
         });
     } catch (err) {
-        console.error('Error fetching footer links:', err);
         // Fallback to empty structure instead of crashing
         res.status(200).json({
             success: true,
@@ -154,7 +150,6 @@ router.get('/socials', async (req, res) => {
             data: socials || []
         });
     } catch (err) {
-        console.error('Error fetching social links:', err);
         res.status(200).json({
             success: true,
             message: 'Fallback empty social links',

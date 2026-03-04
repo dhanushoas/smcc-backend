@@ -8,10 +8,7 @@ try {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
-    console.log('✅ Firebase Admin Initialized');
 } catch (error) {
-    console.warn('⚠️ Firebase Admin could not be initialized. Service account key missing?');
-    console.warn('Push notifications will be simulated (logged to console).');
 }
 
 class NotificationService {
@@ -43,13 +40,9 @@ class NotificationService {
 
         try {
             if (admin.apps.length > 0) {
-                const response = await admin.messaging().send(message);
-                console.log('✅ Notification sent successfully:', response);
-            } else {
-                console.log('📢 [SIMULATED NOTIFICATION]', { title, body, topic: 'matches' });
+                await admin.messaging().send(message);
             }
         } catch (error) {
-            console.error('❌ Error sending notification:', error);
         }
     }
 }

@@ -9,8 +9,11 @@ const { Server } = require('socket.io');
 const { connectDB, sequelize } = require('./config/db');
 require('dotenv').config();
 
+// Initialize Express and HTTP server
 const app = express();
 const server = http.createServer(app);
+
+// Initialize Socket.io with CORS configuration
 const io = new Server(server, {
     cors: {
         origin: "*",
@@ -18,16 +21,16 @@ const io = new Server(server, {
     }
 });
 
-// Attach io to app to use in routes
+// Attach Socket.io instance to app for route access
 app.set('socketio', io);
 
-// Middleware
+// Configure middleware for CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
 
-// Session and Passport
+// Setup session management and Passport authentication
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'secret',
+    secret: process.env.SESSION_SECRET || 'smcc_secret_production',
     resave: false,
     saveUninitialized: false
 }));
@@ -37,33 +40,34 @@ app.use(passport.session());
 // Connect Database
 connectDB();
 
-// Routes
+// Define API routes
 app.get('/ping', (req, res) => res.status(200).send('pong'));
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/matches', require('./routes/matches'));
-app.use('/api/footer', require('./routes/footer'));
-app.use('/api/interactions', require('./routes/misc'));
+app.use('/api/auth', require('./routes/auth')); // Authentication routes
+app.use('/api/matches', require('./routes/matches')); // Match management
+app.use('/api/footer', require('./routes/footer')); // Footer content
+app.use('/api/interactions', require('./routes/misc')); // Miscellaneous interactions
+app.use('/api/tournaments', require('./routes/tournaments')); // Tournament management
+app.use('/api/series', require('./routes/series')); // Series management
 
 // Sync Database
-sequelize.sync({ alter: true })
-    .then(() => console.log('MySQL Tables Synced'))
-    .catch(err => console.error('Error syncing MySQL tables:', err));
+sequelize.sync()
+    .then(() => console.log('✅ Database synchronized successfully'))
+    .catch(err => console.error('❌ Database sync failed:', err.message));
 
 // Expose public uploads folder explicitly
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// -------------------------------------------
-// Global Error Handler (Standardized JSON)
-// -------------------------------------------
+// Global error handling middleware for production-ready responses
 app.use((err, req, res, next) => {
-    console.error('-------------------------------------------');
-    console.error('GLOBAL ERROR CAUGHT:');
-    console.error(err.stack);
-    console.error('-------------------------------------------');
+    // Log error stack locally for debugging
+    if (process.env.NODE_ENV !== 'production') {
+        console.error(err.stack);
+    }
 
-    res.status(500).json({
+    // Send standardized JSON error response
+    res.status(err.status || 500).json({
         success: false,
-        message: process.env.NODE_ENV === 'production'
+        message: (process.env.NODE_ENV === 'production' && !err.isPublic)
             ? 'Internal Server Error'
             : err.message,
         data: null
@@ -72,17 +76,12 @@ app.use((err, req, res, next) => {
 
 // Socket.io connection
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
     socket.on('disconnect', () => {
-        console.log('User disconnected');
     });
 });
 
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log('-------------------------------------------');
-    console.log(`🚀 SMCC Backend Listening on port ${PORT}`);
-    console.log(`ENVIRONMENT: ${process.env.NODE_ENV || 'development'}`);
-    console.log('-------------------------------------------');
+    console.log(`Server running on port ${PORT}`);
 });

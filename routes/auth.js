@@ -7,7 +7,7 @@ const passport = require('passport');
 
 const getIO = (req) => req.app.get('socketio');
 
-// ─── POST /api/auth/login ──────────────────────────────────────────────────
+// Authenticate user with username and password, handle cross-platform session conflicts
 router.post('/login', async (req, res) => {
     const { username, password, platform } = req.body;
     const incomingPlatform = platform || 'web';
@@ -41,7 +41,6 @@ router.post('/login', async (req, res) => {
                 platform: user.activePlatform,
                 reason: `Session taken over by ${incomingPlatform}`
             });
-            console.log(`Force-logout sent to platform: ${user.activePlatform}`);
         }
 
         // ── Generate new JWT ───────────────────────────────────────────────
@@ -61,8 +60,6 @@ router.post('/login', async (req, res) => {
             user.activeToken = token;
             await user.save();
 
-            console.log(`Admin logged in on platform: ${incomingPlatform}`);
-
             res.json({
                 success: true,
                 message: 'Login successful',
@@ -74,16 +71,11 @@ router.post('/login', async (req, res) => {
             });
         });
     } catch (err) {
-        console.error('Login error:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during login',
-            data: null
-        });
+        next(err);
     }
 });
 
-// ─── GET /api/auth/verify ──────────────────────────────────────────────────
+// Verify JWT token validity and check for session overrides from other platforms
 router.get('/verify', async (req, res) => {
     let token = req.header('x-auth-token');
     const authHeader = req.header('Authorization');
@@ -153,7 +145,7 @@ router.get('/verify', async (req, res) => {
     }
 });
 
-// ─── POST /api/auth/logout ─────────────────────────────────────────────────
+// Invalidate user session and notify clients via Socket.io
 router.post('/logout', async (req, res) => {
     try {
         const { userId } = req.body;
@@ -190,7 +182,7 @@ router.post('/logout', async (req, res) => {
     }
 });
 
-// ─── POST /api/auth/reset-session ─────────────────────────────────────────
+// Clear all active sessions for a user to allow fresh login
 router.post('/reset-session', async (req, res) => {
     const { username, password } = req.body;
     try {
@@ -220,17 +212,14 @@ router.post('/reset-session', async (req, res) => {
             data: null
         });
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: 'Server error during session reset',
-            data: null
-        });
+        next(err);
     }
 });
 
 // ─── Google OAuth ──────────────────────────────────────────────────────────
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
+// Handle Google OAuth callback and redirect to frontend with JWT
 router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {

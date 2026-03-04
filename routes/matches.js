@@ -4,9 +4,7 @@ const auth = require('../middleware/auth');
 const matchValidator = require('../middleware/matchValidator');
 const Match = require('../models/Match');
 
-// @route   GET api/matches
-// @desc    Get all matches
-// @access  Public
+// Fetch all matches ordered by date descending
 router.get('/', async (req, res) => {
     try {
         const matches = await Match.findAll({ order: [['date', 'DESC']] });
@@ -25,9 +23,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// @route   GET api/matches/:id
-// @desc    Get match by ID
-// @access  Public
+// Fetch a single match details by primary key
 router.get('/:id', async (req, res) => {
     try {
         const match = await Match.findByPk(req.params.id);
@@ -53,9 +49,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// @route   POST api/matches
-// @desc    Create a match
-// @access  Private
+// Create a new match record and broadcast via Socket.io
 router.post('/', auth, async (req, res) => {
     try {
         const match = await Match.create(req.body);
@@ -75,9 +69,7 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// @route   PUT api/matches/:id
-// @desc    Update match (generic metadata)
-// @access  Private
+// Update general match metadata (title, venue, date)
 router.put('/:id', auth, matchValidator, async (req, res) => {
     try {
         let match = req.match;
@@ -99,9 +91,7 @@ router.put('/:id', auth, matchValidator, async (req, res) => {
     }
 });
 
-// @route   PUT api/matches/:id/score
-// @desc    Update match score & innings (Dedicated)
-// @access  Private
+// Update real-time scoring data and innings state
 router.put('/:id/score', auth, matchValidator, async (req, res) => {
     try {
         let match = req.match;
@@ -139,9 +129,7 @@ router.put('/:id/score', auth, matchValidator, async (req, res) => {
     }
 });
 
-// @route   PUT api/matches/:id/reverse
-// @desc    Reverse last action (Undo)
-// @access  Private
+// Revert the last scoring action from match history
 router.put('/:id/reverse', auth, matchValidator, async (req, res) => {
     try {
         let match = req.match;
@@ -183,9 +171,7 @@ router.put('/:id/reverse', auth, matchValidator, async (req, res) => {
     }
 });
 
-// @route   PUT api/matches/:id/pause
-// @desc    Pause or Resume match
-// @access  Private
+// Toggle match pause state with reason
 router.put('/:id/pause', auth, matchValidator, async (req, res) => {
     try {
         let match = req.match;
@@ -228,9 +214,7 @@ router.put('/:id/pause', auth, matchValidator, async (req, res) => {
     }
 });
 
-// @route   PUT api/matches/:id/toss
-// @desc    Update toss information
-// @access  Private
+// Record toss results and determine initial batting team
 router.put('/:id/toss', auth, matchValidator, async (req, res) => {
     try {
         let match = req.match;
@@ -293,9 +277,7 @@ router.put('/:id/toss', auth, matchValidator, async (req, res) => {
     }
 });
 
-// @route   DELETE api/matches/:id
-// @desc    Delete a match
-// @access  Private
+// Permanently remove a match record and notify clients
 router.delete('/:id', auth, async (req, res) => {
     try {
         const match = await Match.findByPk(req.params.id);

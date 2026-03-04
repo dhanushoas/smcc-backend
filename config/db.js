@@ -10,7 +10,6 @@ if (!dbUrl) {
 
 const sequelize = new Sequelize(dbUrl || 'mysql://localhost/test', {
     dialect: 'mysql',
-    logging: false, // Set to console.log to see all SQL queries in dev
     dialectOptions: {
         ssl: {
             rejectUnauthorized: false
@@ -21,10 +20,6 @@ const sequelize = new Sequelize(dbUrl || 'mysql://localhost/test', {
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
-        console.log('-------------------------------------------');
-        console.log('✅ MySQL Connection Established Successfully');
-        console.log(`Connected to: ${sequelize.config.host}`);
-        console.log('-------------------------------------------');
     } catch (err) {
         console.error('-------------------------------------------');
         console.error('❌ CRITICAL: Unable to connect to database');

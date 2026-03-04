@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
+// Define Match Schema with dynamic competition features
 const Match = sequelize.define('Match', {
     title: {
         type: DataTypes.STRING,
@@ -13,6 +14,18 @@ const Match = sequelize.define('Match', {
     matchType: {
         type: DataTypes.STRING,
         defaultValue: 'ODI'
+    },
+    competitionType: {
+        type: DataTypes.ENUM('head-to-head', 'series', 'tournament'),
+        defaultValue: 'head-to-head'
+    },
+    seriesId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    overs_per_match: {
+        type: DataTypes.INTEGER,
+        defaultValue: 20
     },
     date: {
         type: DataTypes.DATE,
@@ -63,7 +76,7 @@ const Match = sequelize.define('Match', {
             overs: 0,
             target: null
         }
-    },
+    }, // Current live score state
     currentBowler: {
         type: DataTypes.STRING,
         defaultValue: ''
@@ -83,6 +96,22 @@ const Match = sequelize.define('Match', {
     lastUpdated: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
+    }, // Timestamp for synchronization
+    tournamentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    groupId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    tournamentRound: {
+        type: DataTypes.STRING,
+        defaultValue: 'none' // 'group', 'quarter-final', 'semi-final', 'final'
+    },
+    matchNumber: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 }, {
     timestamps: false,
