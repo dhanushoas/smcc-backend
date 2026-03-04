@@ -9,7 +9,7 @@ const updateAdmin = async () => {
         console.log('Database Connected');
 
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('Admin@321', salt);
+        const hashedPassword = await bcrypt.hash('Dhanush@28', salt);
         const targetUsername = 'Admin';
 
         // Try to find existing 'admin' or 'Admin'
