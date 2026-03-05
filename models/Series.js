@@ -37,6 +37,18 @@ const Series = sequelize.define('Series', {
     venue: {
         type: DataTypes.STRING,
         defaultValue: 'SMCC Ground'
+    },
+    teamAWins: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    teamBWins: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    winner: {
+        type: DataTypes.STRING,
+        allowNull: true
     }
 }, {
     timestamps: true

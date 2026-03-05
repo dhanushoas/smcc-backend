@@ -83,6 +83,11 @@ router.put('/:id', auth, matchValidator, async (req, res) => {
         match.lastUpdated = new Date();
         await match.save();
 
+        // Series Logic: Update series status if match completed via general update
+        if (match.status === 'completed' && match.competitionType === 'series' && match.seriesId) {
+            await updateSeriesStatus(match.seriesId, req.app.get('socketio'));
+        }
+
         req.app.get('socketio').emit('matchUpdate', match);
         res.json({ success: true, message: 'Match updated successfully', data: match });
     } catch (err) {
@@ -110,12 +115,33 @@ router.put('/:id/score', auth, matchValidator, async (req, res) => {
         if (req.body.status) match.status = req.body.status;
         if (req.body.manOfTheMatch !== undefined) match.manOfTheMatch = req.body.manOfTheMatch;
 
+        // Series Logic: Validate sequential starting
+        if (req.body.status === 'live' && match.competitionType === 'series' && match.seriesId) {
+            const previousMatch = await Match.findOne({
+                where: {
+                    seriesId: match.seriesId,
+                    matchNumber: match.matchNumber - 1
+                }
+            });
+            if (previousMatch && previousMatch.status !== 'completed' && previousMatch.status !== 'cancelled') {
+                return res.status(400).json({
+                    success: false,
+                    message: `Match ${match.matchNumber - 1} must be completed before starting Match ${match.matchNumber}.`
+                });
+            }
+        }
+
         match.lastUpdated = new Date();
         match.changed('score', true);
         match.changed('innings', true);
         match.changed('history', true); // Force sequelize to detect JSON changes
 
         await match.save();
+
+        // Series Logic: Update series status if match completed
+        if (match.status === 'completed' && match.competitionType === 'series' && match.seriesId) {
+            await updateSeriesStatus(match.seriesId, req.app.get('socketio'));
+        }
 
         req.app.get('socketio').emit('matchUpdate', match);
         res.json({
@@ -309,4 +335,66 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// Helper to update series status, win counters and handle early completion
+async function updateSeriesStatus(seriesId, io) {
+    try {
+        const Series = require('../models/Series');
+        const Match = require('../models/Match');
+
+        const series = await Series.findByPk(seriesId);
+        if (!series) return;
+
+        const matches = await Match.findAll({ where: { seriesId }, order: [['matchNumber', 'ASC']] });
+
+        let teamAWins = 0;
+        let teamBWins = 0;
+
+        const SERIES_MATCH_COUNT = {
+            best_of_3: 3,
+            best_of_5: 5,
+            best_of_7: 7,
+        };
+        const totalMatches = SERIES_MATCH_COUNT[series.type] || 3;
+        const requiredWins = Math.ceil(totalMatches / 2);
+
+        for (const m of matches) {
+            if (m.status === 'completed' && m.score && m.score.winner) {
+                // Winner is stored as team name in m.score.winner
+                if (m.score.winner === series.teamA) teamAWins++;
+                else if (m.score.winner === series.teamB) teamBWins++;
+            }
+        }
+
+        series.teamAWins = teamAWins;
+        series.teamBWins = teamBWins;
+
+        if (teamAWins >= requiredWins) {
+            series.status = 'completed';
+            series.winner = series.teamA;
+        } else if (teamBWins >= requiredWins) {
+            series.status = 'completed';
+            series.winner = series.teamB;
+        } else {
+            series.status = 'ongoing';
+        }
+
+        await series.save();
+
+        // If series is completed, cancel remaining matches
+        if (series.status === 'completed') {
+            for (const m of matches) {
+                if (m.status === 'upcoming' || m.status === 'live') {
+                    m.status = 'cancelled';
+                    await m.save();
+                    io.emit('matchUpdate', m);
+                }
+            }
+        }
+
+        io.emit('seriesUpdate', { seriesId, teamAWins, teamBWins, status: series.status, winner: series.winner });
+    } catch (err) {
+        console.error('Error updating series status:', err);
+    }
+}
 

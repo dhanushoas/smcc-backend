@@ -36,7 +36,7 @@ const Match = sequelize.define('Match', {
         defaultValue: 'SMCC Ground'
     },
     status: {
-        type: DataTypes.ENUM('upcoming', 'live', 'completed'),
+        type: DataTypes.ENUM('upcoming', 'live', 'completed', 'cancelled'),
         defaultValue: 'upcoming'
     },
     teamA: {
