@@ -114,6 +114,8 @@ router.put('/:id/score', auth, matchValidator, async (req, res) => {
         if (req.body.history) match.history = req.body.history;
         if (req.body.status) match.status = req.body.status;
         if (req.body.manOfTheMatch !== undefined) match.manOfTheMatch = req.body.manOfTheMatch;
+        if (req.body.teamASquad) match.teamASquad = req.body.teamASquad;
+        if (req.body.teamBSquad) match.teamBSquad = req.body.teamBSquad;
 
         // Series Logic: Validate sequential starting
         if (req.body.status === 'live' && match.competitionType === 'series' && match.seriesId) {
