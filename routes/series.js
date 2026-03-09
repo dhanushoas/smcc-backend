@@ -42,6 +42,8 @@ router.post('/', async (req, res, next) => {
                 title: `${series.name} - Match ${i}`,
                 teamA: series.teamA,
                 teamB: series.teamB,
+                teamASquad: req.body.teamASquad || [],
+                teamBSquad: req.body.teamBSquad || [],
                 seriesId: series.id,
                 competitionType: 'series',
                 series: series.name,
