@@ -50,7 +50,7 @@ app.use('/api/tournaments', require('./routes/tournaments')); // Tournament mana
 app.use('/api/series', require('./routes/series')); // Series management
 
 // Sync Database
-sequelize.sync()
+sequelize.sync({ alter: true })
     .then(() => console.log('✅ Database synchronized successfully'))
     .catch(err => console.error('❌ Database sync failed:', err.message));
 
