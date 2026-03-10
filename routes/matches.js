@@ -96,6 +96,31 @@ router.put('/:id', auth, matchValidator, async (req, res) => {
     }
 });
 
+// Update match date and time (override)
+router.put('/:id/datetime', auth, matchValidator, async (req, res) => {
+    try {
+        let match = req.match;
+        const { matchDateTime } = req.body;
+        if (!matchDateTime) {
+            return res.status(400).json({ success: false, message: 'matchDateTime is required' });
+        }
+
+        match.date = new Date(matchDateTime);
+        match.lastUpdated = new Date();
+        await match.save();
+
+        req.app.get('socketio').emit('matchUpdate', match);
+        res.json({
+            success: true,
+            message: 'Match date & time overridden successfully',
+            data: match
+        });
+    } catch (err) {
+        console.error('DateTime Update Error:', err);
+        res.status(500).json({ success: false, message: 'Server Error updating datetime', data: null });
+    }
+});
+
 // Update real-time scoring data and innings state
 router.put('/:id/score', auth, matchValidator, async (req, res) => {
     try {

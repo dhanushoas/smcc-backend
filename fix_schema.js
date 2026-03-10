@@ -21,10 +21,11 @@ async function fixSchema() {
             { name: 'teamASquad', type: 'JSON NULL' },
             { name: 'teamBSquad', type: 'JSON NULL' },
             { name: 'currentBowler', type: 'VARCHAR(255) DEFAULT ""' },
-            { name: 'currentBatsmen', type: 'JSON NULL' },
             { name: 'toss', type: 'JSON NULL' },
             { name: 'score', type: 'JSON NULL' },
-            { name: 'innings', type: 'JSON NULL' }
+            { name: 'innings', type: 'JSON NULL' },
+            { name: 'firstInningsOvers', type: 'FLOAT NULL' },
+            { name: 'secondInningsOvers', type: 'FLOAT NULL' }
         ];
 
         for (const col of columnsToFix) {

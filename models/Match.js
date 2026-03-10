@@ -59,6 +59,14 @@ const Match = sequelize.define('Match', {
         type: DataTypes.INTEGER,
         defaultValue: 20
     },
+    firstInningsOvers: {
+        type: DataTypes.FLOAT,
+        allowNull: true
+    },
+    secondInningsOvers: {
+        type: DataTypes.FLOAT,
+        allowNull: true
+    },
     toss: {
         type: DataTypes.JSON,
         defaultValue: {}
