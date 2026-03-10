@@ -207,6 +207,12 @@ router.put('/:id/reverse', auth, matchValidator, async (req, res) => {
         match.history = history;
         match.lastUpdated = new Date();
 
+        // Explicitly mark JSON fields as changed for Sequelize
+        match.changed('score', true);
+        match.changed('innings', true);
+        match.changed('history', true);
+        match.changed('currentBatsmen', true);
+
         await match.save();
         req.app.get('socketio').emit('matchUpdate', match);
         res.json({
