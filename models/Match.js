@@ -89,6 +89,10 @@ const Match = sequelize.define('Match', {
         type: DataTypes.JSON,
         defaultValue: []
     },
+    history: {
+        type: DataTypes.JSON,
+        defaultValue: []
+    },
     manOfTheMatch: {
         type: DataTypes.STRING,
         defaultValue: ''

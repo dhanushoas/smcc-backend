@@ -165,7 +165,7 @@ router.put('/:id/reverse', auth, matchValidator, async (req, res) => {
         if (!match.history || match.history.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'No history to reverse',
+                message: 'No previous ball to undo',
                 data: null
             });
         }
