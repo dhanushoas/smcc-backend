@@ -50,8 +50,8 @@ router.post('/register', async (req, res, next) => {
                 [Op.or]: [
                     { mobile },
                     {
-                        team_name: { [Op.iLike]: team_name.trim() },
-                        captain_name: { [Op.iLike]: captain_name.trim() }
+                        team_name: { [Op.like]: team_name.trim() },
+                        captain_name: { [Op.like]: captain_name.trim() }
                     }
                 ]
             }
