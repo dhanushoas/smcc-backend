@@ -62,4 +62,47 @@ router.get('/registrations', auth, async (req, res, next) => {
     }
 });
 
+// @route   PUT /api/tournament/registrations/:id/approve
+// @desc    Approve registration and create TournamentTeam (Admin only)
+router.put('/registrations/:id/approve', auth, async (req, res, next) => {
+    try {
+        const registration = await TournamentRegistration.findByPk(req.params.id);
+        if (!registration) return res.status(404).json({ success: false, message: 'Registration not found' });
+
+        if (registration.status === 'approved') {
+            return res.status(400).json({ success: false, message: 'Already approved' });
+        }
+
+        // Update status
+        await registration.update({ status: 'approved' });
+
+        // Create TournamentTeam (Pool)
+        const TournamentTeam = require('../models/TournamentTeam');
+        await TournamentTeam.create({
+            name: registration.team_name,
+            captain: registration.captain_name,
+            captainMobile: registration.mobile,
+            district: registration.village
+        });
+
+        res.json({ success: true, message: 'Registration approved and team added to pool.' });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// @route   PUT /api/tournament/registrations/:id/reject
+// @desc    Reject registration (Admin only)
+router.put('/registrations/:id/reject', auth, async (req, res, next) => {
+    try {
+        const registration = await TournamentRegistration.findByPk(req.params.id);
+        if (!registration) return res.status(404).json({ success: false, message: 'Registration not found' });
+
+        await registration.update({ status: 'rejected' });
+        res.json({ success: true, message: 'Registration rejected.' });
+    } catch (err) {
+        next(err);
+    }
+});
+
 module.exports = router;

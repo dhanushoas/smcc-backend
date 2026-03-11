@@ -33,7 +33,7 @@ const TournamentTeam = sequelize.define('TournamentTeam', {
     },
     tournamentId: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true // Allow pool teams not yet assigned to a tournament
     },
     groupId: {
         type: DataTypes.INTEGER,

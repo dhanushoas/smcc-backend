@@ -5,6 +5,20 @@ const TournamentTeam = require('../models/TournamentTeam');
 const TournamentGroup = require('../models/TournamentGroup');
 const Match = require('../models/Match');
 
+// @route   GET /api/tournaments/teams/pool
+// @desc    Get all teams not assigned to a tournament
+router.get('/teams/pool', async (req, res, next) => {
+    try {
+        const teams = await TournamentTeam.findAll({
+            where: { tournamentId: null },
+            order: [['name', 'ASC']]
+        });
+        res.json({ success: true, data: teams });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Helper: parse "10:00 AM" + base date + offset minutes → ISO date
 function buildMatchDateTime(baseDateStr, timeStr, offsetMinutes) {
     // baseDateStr: ISO date string from tournament.startDate
