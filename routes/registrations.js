@@ -20,10 +20,24 @@ router.post('/register', async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Invalid Indian mobile number. Must be 10 digits and start with 6, 7, 8, or 9.' });
         }
 
-        // Check duplicates
-        const existing = await TournamentRegistration.findOne({ where: { mobile } });
+        const { Op } = require('sequelize');
+        const existing = await TournamentRegistration.findOne({
+            where: {
+                [Op.or]: [
+                    { mobile },
+                    {
+                        team_name: { [Op.iLike]: team_name.trim() },
+                        captain_name: { [Op.iLike]: captain_name.trim() }
+                    }
+                ]
+            }
+        });
+
         if (existing) {
-            return res.status(400).json({ success: false, message: 'This mobile number is already registered for a team.' });
+            let msg = 'This team or mobile is already registered.';
+            if (existing.mobile === mobile) msg = 'This mobile number is already registered.';
+            else msg = 'A team with this name and captain is already registered.';
+            return res.status(400).json({ success: false, message: msg });
         }
 
         // Limit to 32
@@ -100,6 +114,20 @@ router.put('/registrations/:id/reject', auth, async (req, res, next) => {
 
         await registration.update({ status: 'rejected' });
         res.json({ success: true, message: 'Registration rejected.' });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// @route   DELETE /api/tournament/registrations/:id
+// @desc    Delete registration (Admin only)
+router.delete('/registrations/:id', auth, async (req, res, next) => {
+    try {
+        const registration = await TournamentRegistration.findByPk(req.params.id);
+        if (!registration) return res.status(404).json({ success: false, message: 'Registration not found' });
+
+        await registration.destroy();
+        res.json({ success: true, message: 'Registration deleted.' });
     } catch (err) {
         next(err);
     }
