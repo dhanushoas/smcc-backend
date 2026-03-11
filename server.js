@@ -48,7 +48,7 @@ app.use('/api/footer', require('./routes/footer')); // Footer content
 app.use('/api/interactions', require('./routes/misc')); // Miscellaneous interactions
 app.use('/api/tournaments', require('./routes/tournaments')); // Tournament management
 app.use('/api/series', require('./routes/series')); // Series management
-app.use('/api/tournament', require('./routes/registrations')); // Team registration
+app.use('/api/tournaments', require('./routes/registrations')); // Team registration
 
 // Sync Database
 sequelize.sync({ alter: true })
