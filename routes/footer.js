@@ -16,9 +16,10 @@ async function ensureDefaultData() {
         if (linkCount === 0) {
             await FooterLink.bulkCreate([
                 { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
-                { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 2 },
-                { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 3 },
-                { title: 'Achievements', route: '/achievements', category: 'quick_links', order: 4 },
+                { title: 'Register Team', route: '/register', category: 'quick_links', order: 2 },
+                { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 3 },
+                { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 4 },
+                { title: 'Achievements', route: '/achievements', category: 'quick_links', order: 5 },
 
                 { title: 'Contact Us', route: '/contact', category: 'support', order: 1 },
                 { title: 'Share Feedback', route: '/feedback', category: 'support', order: 2 },
@@ -53,9 +54,10 @@ router.post('/seed', async (req, res) => {
 
         await FooterLink.bulkCreate([
             { title: 'Live Matches', route: '/', category: 'quick_links', order: 1 },
-            { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 2 },
-            { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 3 },
-            { title: 'Achievements', route: '/achievements', category: 'quick_links', order: 4 },
+            { title: 'Register Team', route: '/register', category: 'quick_links', order: 2 },
+            { title: 'Upcoming Schedule', route: '/schedule', category: 'quick_links', order: 3 },
+            { title: 'Points Table', route: '/points-table', category: 'quick_links', order: 4 },
+            { title: 'Achievements', route: '/achievements', category: 'quick_links', order: 5 },
 
             { title: 'Contact Us', route: '/contact', category: 'support', order: 1 },
             { title: 'Share Feedback', route: '/feedback', category: 'support', order: 2 },
