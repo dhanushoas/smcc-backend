@@ -392,7 +392,7 @@ async function updateSeriesStatus(seriesId, io) {
         const requiredWins = Math.ceil(totalMatches / 2);
 
         for (const m of matches) {
-            if (m.status === 'completed' && m.score && m.score.winner) {
+            if ((m.status === 'completed' || m.status === 'cancelled') && m.score && m.score.winner) {
                 // Winner is stored as team name in m.score.winner
                 if (m.score.winner === series.teamA) teamAWins++;
                 else if (m.score.winner === series.teamB) teamBWins++;
