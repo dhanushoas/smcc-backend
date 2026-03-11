@@ -83,9 +83,9 @@ router.put('/:id', auth, matchValidator, async (req, res) => {
         match.lastUpdated = new Date();
         await match.save();
 
-        // Series Logic: Update series status if match completed via general update
-        if (match.status === 'completed' && match.competitionType === 'series' && match.seriesId) {
-            await updateSeriesStatus(match.seriesId, req.app.get('socketio'));
+        // Tournament Logic: Update points table if match completed
+        if (match.status === 'completed' && match.competitionType === 'tournament') {
+            await updateTournamentPointsTable();
         }
 
         req.app.get('socketio').emit('matchUpdate', match);
@@ -165,9 +165,9 @@ router.put('/:id/score', auth, matchValidator, async (req, res) => {
 
         await match.save();
 
-        // Series Logic: Update series status if match completed
-        if (match.status === 'completed' && match.competitionType === 'series' && match.seriesId) {
-            await updateSeriesStatus(match.seriesId, req.app.get('socketio'));
+        // Tournament Logic: Update points table if match completed
+        if (match.status === 'completed' && match.competitionType === 'tournament') {
+            await updateTournamentPointsTable();
         }
 
         req.app.get('socketio').emit('matchUpdate', match);
@@ -431,3 +431,65 @@ async function updateSeriesStatus(seriesId, io) {
     }
 }
 
+
+// Helper to update tournament points table automatically
+async function updateTournamentPointsTable() {
+    try {
+        const Match = require('../models/Match');
+        const PointsTable = require('../models/PointsTable');
+        const TournamentTeam = require('../models/TournamentTeam');
+
+        // Fetch all completed tournament matches
+        const matches = await Match.findAll({ where: { competitionType: 'tournament', status: 'completed' } });
+        const teams = await TournamentTeam.findAll();
+
+        // Reset points table data for re-calculation (or update specific teams)
+        // For simplicity and accuracy, we'll re-calculate from all matches
+        const stats = {};
+        teams.forEach(t => {
+            stats[t.name] = { played: 0, wins: 0, losses: 0, points: 0, runsScored: 0, oversFaced: 0, runsConceded: 0, oversBowled: 0 };
+        });
+
+        matches.forEach(m => {
+            const teamA = m.teamA;
+            const teamB = m.teamB;
+            const winner = m.score?.winner;
+
+            if (stats[teamA] && stats[teamB]) {
+                stats[teamA].played++;
+                stats[teamB].played++;
+
+                if (winner === teamA) {
+                    stats[teamA].wins++;
+                    stats[teamA].points += 2;
+                    stats[teamB].losses++;
+                } else if (winner === teamB) {
+                    stats[teamB].wins++;
+                    stats[teamB].points += 2;
+                    stats[teamA].losses++;
+                }
+
+                // NRR Logic (Simplified: matches only for now)
+                // In a real app, you'd extract detailed runs/overs from m.innings
+            }
+        });
+
+        for (const teamName in stats) {
+            const s = stats[teamName];
+            const team = teams.find(t => t.name === teamName);
+            if (team) {
+                await PointsTable.upsert({
+                    team_id: team.id,
+                    team_name: team.name,
+                    matches_played: s.played,
+                    wins: s.wins,
+                    losses: s.losses,
+                    points: s.points,
+                    net_run_rate: 0 // Placeholder for complex NRR
+                });
+            }
+        }
+    } catch (err) {
+        console.error('Error updating tournament points table:', err);
+    }
+}
