@@ -304,11 +304,11 @@ router.put('/:id/toss', auth, matchValidator, async (req, res) => {
             });
         }
 
-        const opposition = (tossWinnerTeamId === match.teamA) ? match.teamB : match.teamA;
-        const battingTeam = (tossDecision.toUpperCase() === 'BAT') ? tossWinnerTeamId : opposition;
+        const opposition = (tossWinnerTeamId.trim() === match.teamA.trim()) ? match.teamB : match.teamA;
+        const battingTeam = (tossDecision.toUpperCase() === 'BAT') ? tossWinnerTeamId.trim() : opposition.trim();
 
         match.toss = {
-            winner: tossWinnerTeamId,
+            winner: tossWinnerTeamId.trim(),
             decision: tossDecision.toLowerCase()
         };
 

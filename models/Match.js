@@ -5,11 +5,17 @@ const { sequelize } = require('../config/db');
 const Match = sequelize.define('Match', {
     title: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        set(val) {
+            this.setDataValue('title', val ? val.toString().trim() : '');
+        }
     },
     series: {
         type: DataTypes.STRING,
-        defaultValue: ''
+        defaultValue: '',
+        set(val) {
+            this.setDataValue('series', val ? val.toString().trim() : '');
+        }
     },
     matchType: {
         type: DataTypes.STRING,
@@ -33,7 +39,10 @@ const Match = sequelize.define('Match', {
     },
     venue: {
         type: DataTypes.STRING,
-        defaultValue: 'SMCC Ground'
+        defaultValue: 'SMCC Ground',
+        set(val) {
+            this.setDataValue('venue', val ? val.toString().trim() : 'SMCC Ground');
+        }
     },
     status: {
         type: DataTypes.ENUM('upcoming', 'live', 'completed', 'cancelled'),
@@ -41,19 +50,31 @@ const Match = sequelize.define('Match', {
     },
     teamA: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        set(val) {
+            this.setDataValue('teamA', val ? val.toString().trim() : '');
+        }
     },
     teamB: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        set(val) {
+            this.setDataValue('teamB', val ? val.toString().trim() : '');
+        }
     },
     teamASquad: {
         type: DataTypes.JSON,
-        defaultValue: []
+        defaultValue: [],
+        set(val) {
+            this.setDataValue('teamASquad', Array.isArray(val) ? val.map(p => p ? p.toString().trim() : '') : val);
+        }
     },
     teamBSquad: {
         type: DataTypes.JSON,
-        defaultValue: []
+        defaultValue: [],
+        set(val) {
+            this.setDataValue('teamBSquad', Array.isArray(val) ? val.map(p => p ? p.toString().trim() : '') : val);
+        }
     },
     totalOvers: {
         type: DataTypes.INTEGER,
